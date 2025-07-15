@@ -80,7 +80,7 @@ model Store {
 }
 
 model Order {
-  jobid   String   @id @default(cuid())
+  orderid String   @id @default(cuid())
   lat     Float
   lon     Float
   city    String
