@@ -309,7 +309,23 @@ export default function ViewStoresPage() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => alert('Delete logic to be added')}
+                            onClick={async () => {
+                              if (!confirm('Are you sure you want to delete this store? This action cannot be undone.')) return;
+                              try {
+                                const res = await fetch(`/api/store/${store.storeid}`, {
+                                  method: 'DELETE',
+                                });
+                                if (!res.ok) {
+                                  const err = await res.json();
+                                  alert(err.error || 'Failed to delete store');
+                                  return;
+                                }
+                                // Remove deleted store from UI
+                                setStores((prev) => prev.filter((s) => s.storeid !== store.storeid));
+                              } catch (e) {
+                                alert('Error deleting store.');
+                              }
+                            }}
                           >
                             Delete
                           </Button>

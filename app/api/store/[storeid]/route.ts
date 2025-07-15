@@ -1,3 +1,44 @@
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { storeid: string } }
+) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const storeid = params.storeid;
+
+  if (!storeid) {
+    return NextResponse.json({ error: "Missing store ID" }, { status: 400 });
+  }
+
+  try {
+    // Check if store exists and is owned by current user
+    const existingStore = await prisma.store.findUnique({
+      where: { storeid },
+    });
+
+    if (!existingStore) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    if (existingStore.postedById !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Delete store
+    await prisma.store.delete({
+      where: { storeid },
+    });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error("[STORE_DELETE_ERROR]", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
