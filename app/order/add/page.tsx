@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Loader2 } from "lucide-react"; // Add this import for a spinner icon
 
 const MapPicker = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
@@ -31,6 +32,7 @@ export default function AddOrderPage() {
   const [form, setForm] = useState({
     address: "",
   });
+  const [loading, setLoading] = useState(false); // Add loading state
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -44,6 +46,7 @@ export default function AddOrderPage() {
 
   const handleSubmit = async () => {
     if (!latLon) return alert("Please select order location on the map");
+    setLoading(true); // Start loading
 
     const payload = {
       address: form.address,
@@ -66,6 +69,7 @@ export default function AddOrderPage() {
         } else {
           alert("Something went wrong. Try again.");
         }
+        setLoading(false); // Stop loading on error
         return;
       }
 
@@ -75,6 +79,7 @@ export default function AddOrderPage() {
     } catch (err) {
       console.error(err);
       alert("Network error. Try again.");
+      setLoading(false); // Stop loading on error
     }
   };
 
@@ -138,8 +143,20 @@ export default function AddOrderPage() {
               </div>
             </div>
 
-            <Button className="w-full" size="lg" onClick={handleSubmit}>
-              Submit Order
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="animate-spin w-5 h-5" />
+                  Adding Order...
+                </span>
+              ) : (
+                "Submit Order"
+              )}
             </Button>
           </div>
         </Card>
