@@ -1,12 +1,15 @@
 'use client';
-import { useSession } from 'next-auth/react';
+
 import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+
+import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 
@@ -23,16 +26,20 @@ const cityCoords: Record<string, [number, number]> = {
   Lucknow: [26.8467, 80.9462],
 };
 
-
-export default function AddStorePage() {
-  const { data: session, status } = useSession();
+export default function EditStorePage() {
   const router = useRouter();
+  const params = useParams();
+    const storeid = params.storeid as string;
+
+  const { data: session, status } = useSession();
+
+  const [loading, setLoading] = useState(true);
   const [city, setCity] = useState('Delhi');
   const [latLon, setLatLon] = useState<[number, number] | null>(null);
 
   const [form, setForm] = useState({
     name: '',
-    address: '', // added
+    address: '',
     deliveryRadiusKm: '',
     avgDailyCustomers: '',
   });
@@ -43,58 +50,98 @@ export default function AddStorePage() {
     }
   }, [status, router]);
 
+  useEffect(() => {
+    if (!storeid) return;
+    const fetchStore = async () => {
+      try {
+        const res = await fetch(`/api/store/${storeid}`);
+        if (!res.ok) throw new Error('Failed to fetch store');
+        const store = await res.json();
+
+        const [name, ...rest] = store.name.split(', ');
+        const address = rest.join(', ');
+
+        setForm({
+          name,
+          address,
+          deliveryRadiusKm: store.deliveryRadiusKm?.toString() || '',
+          avgDailyCustomers: store.avgDailyCustomers?.toString() || '',
+        });
+
+        setCity(store.city);
+        setLatLon([store.lat, store.lon]);
+      } catch (err) {
+        console.error(err);
+        alert('Error loading store data');
+        router.push('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStore();
+  }, [storeid, router]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async () => {
-  if (!latLon) return alert('Please select store location on the map');
+  const handleUpdate = async () => {
+    if (!latLon || !storeid) return alert('Location or ID missing');
 
-  const finalName = `${form.name}, ${form.address}`;
+    const finalName = `${form.name}, ${form.address}`;
 
-  const payload = {
-    name: finalName,
-    lat: latLon[0],
-    lon: latLon[1],
-    city,
-    deliveryRadiusKm: Number(form.deliveryRadiusKm),
-    avgDailyCustomers: Number(form.avgDailyCustomers),
+    const payload = {
+      name: finalName,
+      lat: latLon[0],
+      lon: latLon[1],
+      city,
+      deliveryRadiusKm: Number(form.deliveryRadiusKm),
+      avgDailyCustomers: Number(form.avgDailyCustomers),
+    };
+
+    try {
+      const res = await fetch(`/api/store/${storeid}`, {
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        if (err?.messages) {
+          alert('Validation Error:\n' + err.messages.join('\n'));
+        } else {
+          alert('Something went wrong. Try again.');
+        }
+        return;
+      }
+
+      alert('Store updated successfully!');
+      router.push('/store/view');
+    } catch (err) {
+      console.error(err);
+      alert('Network error. Try again.');
+    }
   };
 
-  try {
-    const res = await fetch('/api/store', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      if (err?.messages) {
-        alert('Validation Error:\n' + err.messages.join('\n'));
-      } else {
-        alert('Something went wrong. Try again.');
-      }
-      return;
-    }
-
-    const store = await res.json();
-    alert(`Store "${store.name}" added successfully!`);
-    router.push('/');
-  } catch (err) {
-    console.error(err);
-    alert('Network error. Try again.');
+  if (loading) {
+    return (
+      <div className="p-10 max-w-3xl mx-auto">
+        <Skeleton className="h-6 w-1/3 mb-4" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
   }
-};
 
   return (
     <main className="min-h-screen bg-background text-foreground px-4 py-10">
       <div className="max-w-3xl mx-auto">
         <Card className="border-border">
           <CardHeader>
-            <CardTitle>Add a New Store</CardTitle>
+            <CardTitle>Edit Store</CardTitle>
             <CardDescription>
-              Fill in the details below and click on the map to choose the store’s exact location.
+              Update the store details and click on the map to adjust location if needed.
             </CardDescription>
           </CardHeader>
 
@@ -105,25 +152,23 @@ export default function AddStorePage() {
               <Input
                 id="name"
                 name="name"
-                placeholder="e.g., Vishal Mega Mart"
                 value={form.name}
                 onChange={handleChange}
               />
             </div>
 
-            {/* Address / Locality */}
+            {/* Address */}
             <div className="space-y-2">
-              <Label htmlFor="address">Address or Locality</Label>
+              <Label htmlFor="address">Address</Label>
               <Input
                 id="address"
                 name="address"
-                placeholder="e.g., Sector 64, Chandigarh"
                 value={form.address}
                 onChange={handleChange}
               />
             </div>
 
-            {/* City Dropdown */}
+            {/* City */}
             <div className="space-y-2">
               <Label htmlFor="city">City</Label>
               <select
@@ -147,7 +192,7 @@ export default function AddStorePage() {
               />
             </div>
 
-            {/* Lat/Lon Fields */}
+            {/* Lat/Lon */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="lat">Latitude</Label>
@@ -167,7 +212,6 @@ export default function AddStorePage() {
                   id="deliveryRadiusKm"
                   name="deliveryRadiusKm"
                   type="number"
-                  placeholder="e.g., 3"
                   value={form.deliveryRadiusKm}
                   onChange={handleChange}
                 />
@@ -178,15 +222,14 @@ export default function AddStorePage() {
                   id="avgDailyCustomers"
                   name="avgDailyCustomers"
                   type="number"
-                  placeholder="e.g., 150"
                   value={form.avgDailyCustomers}
                   onChange={handleChange}
                 />
               </div>
             </div>
 
-            <Button className="w-full" size="lg" onClick={handleSubmit}>
-              Submit Store
+            <Button className="w-full" size="lg" onClick={handleUpdate}>
+              Update Store
             </Button>
           </div>
         </Card>

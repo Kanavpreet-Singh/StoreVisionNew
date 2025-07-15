@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -32,13 +34,22 @@ interface StoreData {
   city: string
   addedAt: string
   isActive: boolean
+  postedById: string;
 }
 
 export default function ViewStoresPage() {
   const [city, setCity] = useState("")
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [stores, setStores] = useState<StoreData[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  // useEffect(() => {
+  //     if (status === 'unauthenticated') {
+  //       router.push('/auth/signin');
+  //     }
+  //   }, [status, router]);
 
   const fetchStores = async () => {
     if (!city) return
@@ -284,6 +295,26 @@ export default function ViewStoresPage() {
                           Added on {formatDate(store.addedAt)}
                         </div>
                       </div>
+
+                      {/* Edit/Delete Buttons if owned by user */}
+                      {session?.user?.id === store.postedById && (
+                        <div className="pt-4 border-t border-border flex gap-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/store/edit/${store.storeid}`)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => alert('Delete logic to be added')}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
