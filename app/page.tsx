@@ -1,8 +1,13 @@
+"use client"
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, MapPin, TrendingUp, Upload, Users, Zap, ArrowRight, CheckCircle } from "lucide-react";
-
+import {Store, ShoppingCart, LogIn, BarChart3, MapPin, TrendingUp, Upload, Users, Zap, ArrowRight, CheckCircle } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation"
 export default function Home() {
+  const router = useRouter()
+  const {data:session}=useSession();
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
@@ -23,11 +28,11 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button size="lg" className="group">
+            {!session? <Button onClick={()=>{router.push("/auth/signin")}} size="lg" className="group">
               <Upload className="w-5 h-5 mr-2" />
               Get Started Free
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
+            </Button>:<></>}
             <Button size="lg" variant="outline">
               <BarChart3 className="w-5 h-5 mr-2" />
               View Demo
@@ -225,18 +230,33 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-8 border border-border">
-              <div className="text-center">
-                <BarChart3 className="w-16 h-16 text-primary mx-auto mb-6" />
-                <h3 className="text-2xl font-bold mb-4">Ready to get started?</h3>
-                <p className="text-muted-foreground mb-6">
-                  Upload your first dataset and see the power of StoreVision in action.
-                </p>
-                <Button size="lg" className="w-full">
-                  Start Free Trial
-                </Button>
-              </div>
+            {/* Right Column: Call-to-Action Panel */}
+        <div className="bg-muted/50 rounded-lg p-8 border border-border flex flex-col items-center text-center">
+          <BarChart3 className="w-16 h-16 text-primary mb-6" />
+          <h3 className="text-2xl font-bold mb-4">Ready to get started?</h3>
+          <p className="text-muted-foreground mb-6 max-w-md">
+            Upload your first dataset and see the power of StoreVision in action.
+          </p>
+
+          {!session ? (
+            <Button onClick={() => router.push("/auth/signin")} size="lg">
+              <LogIn className="w-5 h-5 mr-2" />
+              Start Free Trial
+            </Button>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button onClick={() => router.push("/store/add")} size="lg">
+                <Store className="w-5 h-5 mr-2" />
+                Add Store
+              </Button>
+              <Button onClick={() => router.push("/order/add")} size="lg">
+                <ShoppingCart className="w-5 h-5 mr-2" />
+                Add Order
+              </Button>
             </div>
+          )}
+        </div>
+
           </div>
         </div>
       </section>
@@ -249,9 +269,9 @@ export default function Home() {
             Join hundreds of retailers who have transformed their expansion strategy with StoreVision.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg">Get Started Free</Button>
-            <Button size="lg" variant="outline">
-              Schedule Demo
+            {!session?<Button onClick={()=>{router.push("/auth/signin")}} size="lg">Get Started Free</Button>:<></>}
+            <Button onClick={()=>{router.push("/predictor")}} size="lg" variant="outline">
+              Go to predictor
             </Button>
           </div>
         </div>
