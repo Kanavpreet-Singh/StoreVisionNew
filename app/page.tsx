@@ -23,7 +23,7 @@ export default function Home() {
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-            Transform your retail strategy with AI-powered insights. Upload order data, analyze local demand patterns,
+            Transform your retail strategy with smart insights. Upload order data, analyze local demand patterns,
             and discover the perfect locations for your next successful store.
           </p>
 
@@ -172,7 +172,7 @@ export default function Home() {
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-2xl font-bold text-primary-foreground">2</span>
               </div>
-              <h3 className="text-xl font-semibold mb-4">AI Analysis</h3>
+              <h3 className="text-xl font-semibold mb-4">In-depth Analysis</h3>
               <p className="text-muted-foreground">
                 Our advanced algorithms analyze patterns, demographics, and market opportunities in real-time.
               </p>
