@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
 
@@ -43,6 +44,7 @@ export default function EditStorePage() {
     address: '',
     deliveryRadiusKm: '',
     avgDailyCustomers: '',
+    isActive: true,
   });
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function EditStorePage() {
           address,
           deliveryRadiusKm: store.deliveryRadiusKm?.toString() || '',
           avgDailyCustomers: store.avgDailyCustomers?.toString() || '',
+          isActive: store.isActive ?? true,
         });
 
         setCity(store.city);
@@ -100,6 +103,7 @@ export default function EditStorePage() {
     city,
     deliveryRadiusKm: Number(form.deliveryRadiusKm),
     avgDailyCustomers: Number(form.avgDailyCustomers),
+    isActive: form.isActive,
   };
 
   try {
@@ -237,6 +241,23 @@ export default function EditStorePage() {
                   onChange={handleChange}
                 />
               </div>
+              <div className="space-y-2">
+              <Label htmlFor="isActive">Store Status</Label>
+              <div className="flex items-center justify-between px-3 py-2 border rounded bg-background text-foreground">
+                <span>
+                  {form.isActive ? '🟢 Store is Active (Orders can be assigned)' : '🔴 Store is Inactive (Will not get orders)'}
+                </span>
+                <Switch
+                  id="isActive"
+                  checked={form.isActive}
+                  onCheckedChange={(value) =>
+                    setForm((prev) => ({ ...prev, isActive: value }))
+                  }
+                />
+              </div>
+            </div>
+
+              
             </div>
 
             <Button className="w-full" size="lg" onClick={handleUpdate} disabled={updating}>

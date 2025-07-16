@@ -3,60 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 
-
-
-
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { storeid: string } }
-) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const storeid = params.storeid;
-
-  if (!storeid) {
-    return NextResponse.json({ error: "Missing store ID" }, { status: 400 });
-  }
-
-  try {
-    // 1. Check if store exists and is owned by current user
-    const existingStore = await prisma.store.findUnique({
-      where: { storeid },
-    });
-
-    if (!existingStore) {
-      return NextResponse.json({ error: "Store not found" }, { status: 404 });
-    }
-
-    if (existingStore.postedById !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // 2. Set isFulfilled = false and remove store reference from related orders
-    await prisma.order.updateMany({
-      where: { storeid },
-      data: {
-        isFulfilled: false,
-        storeid: null,
-      },
-    });
-
-    // 3. Delete the store
-    await prisma.store.delete({
-      where: { storeid },
-    });
-
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
-    console.error("[STORE_DELETE_ERROR]", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
+// ✅ Store schema (used for PATCH validation)
 const storeSchema = z.object({
   name: z.string().min(2).max(100),
   city: z.string().min(2).max(100),
@@ -72,6 +19,7 @@ const storeSchema = z.object({
     .min(0, { message: "Customer count can't be negative" })
     .max(100000, { message: "Too large customer number" })
     .optional(),
+  isActive: z.boolean().optional(), // ✅ Added toggleable isActive
 });
 
 export async function GET(
@@ -94,7 +42,6 @@ export async function GET(
   }
 }
 
-
 export async function PATCH(
   request: Request,
   { params }: { params: { storeid: string } }
@@ -114,7 +61,7 @@ export async function PATCH(
   try {
     const body = await request.json();
 
-    // Validate input
+    // Validate input (includes optional isActive field)
     const validated = storeSchema.parse(body);
 
     // Check if store exists and is owned by current user
@@ -130,7 +77,18 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Update store
+    // If store is being marked inactive now
+    if (validated.isActive === false) {
+      await prisma.order.updateMany({
+        where: { storeid },
+        data: {
+          isFulfilled: false,
+          storeid: null,
+        },
+      });
+    }
+
+    // Update the store with new values
     const updatedStore = await prisma.store.update({
       where: { storeid },
       data: validated,
@@ -147,6 +105,58 @@ export async function PATCH(
       );
     }
 
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { storeid: string } }
+) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const storeid = params.storeid;
+
+  if (!storeid) {
+    return NextResponse.json({ error: "Missing store ID" }, { status: 400 });
+  }
+
+  try {
+    // ✅ Check store ownership
+    const existingStore = await prisma.store.findUnique({
+      where: { storeid },
+    });
+
+    if (!existingStore) {
+      return NextResponse.json({ error: "Store not found" }, { status: 404 });
+    }
+
+    if (existingStore.postedById !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // ✅ Mark associated orders as unfulfilled and remove store reference
+    await prisma.order.updateMany({
+      where: { storeid },
+      data: {
+        isFulfilled: false,
+        storeid: null,
+      },
+    });
+
+    // ✅ Delete the store
+    await prisma.store.delete({
+      where: { storeid },
+    });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error("[STORE_DELETE_ERROR]", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
