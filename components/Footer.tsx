@@ -26,13 +26,13 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="font-semibold text-foreground">Product</h3>
             <nav className="flex flex-col space-y-2">
-              <Link href="/upload" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/store/add" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Upload Data
               </Link>
-              <Link href="/orders" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/order/view" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Order Analytics
               </Link>
-              <Link href="/stores" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/store/view" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Store Management
               </Link>
               <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
