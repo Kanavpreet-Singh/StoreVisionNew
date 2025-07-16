@@ -52,13 +52,10 @@ export async function POST(req: NextRequest) {
     const stores = await prisma.store.findMany({
       where: { city, isActive: true },
     });
-    if (!stores.length) {
-      return NextResponse.json({ messages: ['No stores found in this city'] }, { status: 404 });
-    }
 
-    // Find nearest store within its delivery radius
     let nearestStore = null;
     let minDist = Infinity;
+
     for (const store of stores) {
       const dist = getDistanceFromLatLonInKm(lat, lon, store.lat, store.lon);
       if (
@@ -70,23 +67,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!nearestStore) {
-      return NextResponse.json({ messages: ['No store delivers to this location'] }, { status: 404 });
-    }
-
-    // Create order
     const order = await prisma.order.create({
       data: {
         lat,
         lon,
         city,
-        storeid: nearestStore.storeid,
+        isFulfilled: nearestStore ? true : false,
+        storeid: nearestStore?.storeid ?? null, 
       },
     });
 
-    return NextResponse.json({ ...order, storeName: nearestStore.name });
+    return NextResponse.json({
+      ...order,
+      storeName: nearestStore?.name ?? null,
+    });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ messages: ['Internal server error'] }, { status: 500 });
   }
 }
+

@@ -86,6 +86,7 @@ model Order {
   city    String
   addedAt DateTime @default(now())
 
-  store   Store  @relation(fields: [storeid], references: [storeid], onDelete: Cascade)
-  storeid String //store the nearest store which will deliver this order
+  isFulfilled Boolean @default(false)
+  storeid     String?
+  store       Store?  @relation(fields: [storeid], references: [storeid], onDelete: SetNull)
 }

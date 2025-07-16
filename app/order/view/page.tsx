@@ -3,13 +3,32 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { MapPin, StoreIcon, Calendar, AlertCircle, RefreshCw, Search } from "lucide-react";
+import {
+  MapPin,
+  StoreIcon,
+  Calendar,
+  AlertCircle,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 
 const cityOptions = [
   "Delhi",
@@ -29,7 +48,8 @@ interface OrderData {
   lon: number;
   city: string;
   addedAt: string;
-  store: {
+  isFulfilled: boolean;
+  store?: {
     storeid: string;
     name: string;
     city: string;
@@ -175,16 +195,21 @@ export default function ViewOrdersPage() {
                         <div className="flex-1">
                           <CardTitle className="text-lg flex items-center gap-2">
                             <StoreIcon className="h-5 w-5 text-primary" />
-                            Assigned Store: {order.store.name}
+                            {order.isFulfilled
+                              ? `Assigned Store: ${order.store?.name || "N/A"}`
+                              : "Order Not Fulfilled"}
                           </CardTitle>
-                          <CardDescription className="flex items-center gap-1 mt-1">
-                            <MapPin className="h-4 w-4" />
-                            {order.store.city}
-                          </CardDescription>
+                          {order.isFulfilled && order.store && (
+                            <CardDescription className="flex items-center gap-1 mt-1">
+                              <MapPin className="h-4 w-4" />
+                              {order.store.city}
+                            </CardDescription>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      {/* Order Location */}
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Order Location</h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -198,6 +223,15 @@ export default function ViewOrdersPage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Fulfillment Status */}
+                      {!order.isFulfilled && (
+                        <div className="text-sm text-red-600 font-semibold">
+                          ⚠️ This order is currently not fulfilled (no store available).
+                        </div>
+                      )}
+
+                      {/* Order Date */}
                       <div className="pt-2 border-t border-border">
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" />

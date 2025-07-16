@@ -1,3 +1,11 @@
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { auth } from "@/auth";
+
+
+
+
 export async function DELETE(
   _request: Request,
   { params }: { params: { storeid: string } }
@@ -15,7 +23,7 @@ export async function DELETE(
   }
 
   try {
-    // Check if store exists and is owned by current user
+    // 1. Check if store exists and is owned by current user
     const existingStore = await prisma.store.findUnique({
       where: { storeid },
     });
@@ -28,7 +36,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Delete store
+    // 2. Set isFulfilled = false and remove store reference from related orders
+    await prisma.order.updateMany({
+      where: { storeid },
+      data: {
+        isFulfilled: false,
+        storeid: null,
+      },
+    });
+
+    // 3. Delete the store
     await prisma.store.delete({
       where: { storeid },
     });
@@ -39,11 +56,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { auth } from "@/auth";
-
 
 const storeSchema = z.object({
   name: z.string().min(2).max(100),

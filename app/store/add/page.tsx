@@ -2,6 +2,7 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +26,7 @@ const cityCoords: Record<string, [number, number]> = {
 
 
 export default function AddStorePage() {
+  const [loading, setLoading] = useState(false);
   const { data: session, status } = useSession();
   const router = useRouter();
   const [city, setCity] = useState('Delhi');
@@ -47,7 +49,7 @@ export default function AddStorePage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
   if (!latLon) return alert('Please select store location on the map');
 
   const finalName = `${form.name}, ${form.address}`;
@@ -62,6 +64,9 @@ export default function AddStorePage() {
   };
 
   try {
+    setLoading(true); // show loader
+
+    // 1. Add new store
     const res = await fetch('/api/store', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -79,13 +84,30 @@ export default function AddStorePage() {
     }
 
     const store = await res.json();
-    alert(`Store "${store.name}" added successfully!`);
+
+    // 2. Call reassignment API
+    const reassign = await fetch('/api/reassign-orders', {
+      method: 'POST',
+    });
+
+    if (!reassign.ok) {
+      const err = await reassign.json();
+      alert(`Store "${store.name}" added, but order reassignment failed: ${err?.error || 'Unknown error'}`);
+    } else {
+      const result = await reassign.json();
+      alert(`Store "${store.name}" added successfully!\n${result.message}`);
+    }
+
+    // 3. Redirect
     router.push('/');
   } catch (err) {
     console.error(err);
     alert('Network error. Try again.');
+  } finally {
+    setLoading(false); // hide loader
   }
 };
+
 
   return (
     <main className="min-h-screen bg-background text-foreground px-4 py-10">
@@ -185,9 +207,17 @@ export default function AddStorePage() {
               </div>
             </div>
 
-            <Button className="w-full" size="lg" onClick={handleSubmit}>
-              Submit Store
+            <Button className="w-full" size="lg" onClick={handleSubmit} disabled={loading}>
+              {loading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Submit Store'
+              )}
             </Button>
+
           </div>
         </Card>
       </div>

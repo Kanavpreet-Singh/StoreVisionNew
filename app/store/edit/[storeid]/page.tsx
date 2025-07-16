@@ -29,6 +29,7 @@ const cityCoords: Record<string, [number, number]> = {
 export default function EditStorePage() {
   const router = useRouter();
   const params = useParams();
+  const [updating, setUpdating] = useState(false);
     const storeid = params.storeid as string;
 
   const { data: session, status } = useSession();
@@ -87,43 +88,53 @@ export default function EditStorePage() {
   };
 
   const handleUpdate = async () => {
-    if (!latLon || !storeid) return alert('Location or ID missing');
+  if (!latLon || !storeid) return alert('Location or ID missing');
+  setUpdating(true);
 
-    const finalName = `${form.name}, ${form.address}`;
+  const finalName = `${form.name}, ${form.address}`;
 
-    const payload = {
-      name: finalName,
-      lat: latLon[0],
-      lon: latLon[1],
-      city,
-      deliveryRadiusKm: Number(form.deliveryRadiusKm),
-      avgDailyCustomers: Number(form.avgDailyCustomers),
-    };
-
-    try {
-      const res = await fetch(`/api/store/${storeid}`, {
-        method: 'PATCH', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        if (err?.messages) {
-          alert('Validation Error:\n' + err.messages.join('\n'));
-        } else {
-          alert('Something went wrong. Try again.');
-        }
-        return;
-      }
-
-      alert('Store updated successfully!');
-      router.push('/store/view');
-    } catch (err) {
-      console.error(err);
-      alert('Network error. Try again.');
-    }
+  const payload = {
+    name: finalName,
+    lat: latLon[0],
+    lon: latLon[1],
+    city,
+    deliveryRadiusKm: Number(form.deliveryRadiusKm),
+    avgDailyCustomers: Number(form.avgDailyCustomers),
   };
+
+  try {
+    const res = await fetch(`/api/store/${storeid}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      if (err?.messages) {
+        alert('Validation Error:\n' + err.messages.join('\n'));
+      } else {
+        alert('Something went wrong. Try again.');
+      }
+      return;
+    }
+
+    
+    await fetch('/api/reassign-orders', {
+      method: 'POST',
+    });
+
+    alert('Store updated successfully!');
+    router.push('/store/view');
+  } catch (err) {
+    console.error(err);
+    alert('Network error. Try again.');
+  } finally {
+    setUpdating(false);
+  }
+};
+
+
 
   if (loading) {
     return (
@@ -228,9 +239,17 @@ export default function EditStorePage() {
               </div>
             </div>
 
-            <Button className="w-full" size="lg" onClick={handleUpdate}>
-              Update Store
+            <Button className="w-full" size="lg" onClick={handleUpdate} disabled={updating}>
+              {updating ? (
+                <>
+                  <span className="mr-2 h-4 w-4 animate-spin border-2 border-t-transparent rounded-full border-white" />
+                  Updating...
+                </>
+              ) : (
+                'Update Store'
+              )}
             </Button>
+
           </div>
         </Card>
       </div>

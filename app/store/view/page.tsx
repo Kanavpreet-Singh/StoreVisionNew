@@ -39,6 +39,8 @@ interface StoreData {
 
 export default function ViewStoresPage() {
   const [city, setCity] = useState("")
+  const [reassigning, setReassigning] = useState(false);
+
   const { data: session, status } = useSession();
   const router = useRouter();
   const [stores, setStores] = useState<StoreData[]>([])
@@ -89,6 +91,52 @@ export default function ViewStoresPage() {
       </CardContent>
     </Card>
   )
+
+  const handleDeleteStore = async (storeId: string) => {
+  const confirmDelete = confirm(
+    "Are you sure you want to delete this store? This action cannot be undone."
+  );
+  if (!confirmDelete) return;
+
+  try {
+    setReassigning(true);
+
+    const res = await fetch(`/api/store/${storeId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error || "Failed to delete store");
+      return;
+    }
+
+    // Remove from UI
+    setStores((prev) => prev.filter((s) => s.storeid !== storeId));
+
+    // Trigger reassignment
+    const reassign = await fetch(`/api/reassign-orders`, {
+      method: "POST",
+    });
+
+    if (!reassign.ok) {
+      const err = await reassign.json();
+      console.warn("Some orders might not be reassigned:", err.error);
+      alert("Store deleted, but some orders might not be reassigned.");
+    } else {
+      const result = await reassign.json();
+      alert(result.message || "Store deleted and orders reassigned.");
+    }
+  } catch (e) {
+    alert("Error deleting store or reassigning orders.");
+    console.error(e);
+  } finally {
+    setReassigning(false);
+  }
+};
+
+
+
 
   return (
     <main className="min-h-screen px-4 py-8 bg-background text-foreground">
@@ -309,26 +357,19 @@ export default function ViewStoresPage() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={async () => {
-                              if (!confirm('Are you sure you want to delete this store? This action cannot be undone.')) return;
-                              try {
-                                const res = await fetch(`/api/store/${store.storeid}`, {
-                                  method: 'DELETE',
-                                });
-                                if (!res.ok) {
-                                  const err = await res.json();
-                                  alert(err.error || 'Failed to delete store');
-                                  return;
-                                }
-                                // Remove deleted store from UI
-                                setStores((prev) => prev.filter((s) => s.storeid !== store.storeid));
-                              } catch (e) {
-                                alert('Error deleting store.');
-                              }
-                            }}
+                            onClick={() => handleDeleteStore(store.storeid)}
+                            disabled={reassigning}
                           >
-                            Delete
+                            {reassigning ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Reassigning...
+                              </>
+                            ) : (
+                              "Delete"
+                            )}
                           </Button>
+
                         </div>
                       )}
                     </CardContent>
