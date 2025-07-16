@@ -1,17 +1,20 @@
-import L from 'leaflet';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+// lib/fix-leaflet-icon.ts
+export const fixLeafletIcons = () => {
+  if (typeof window === "undefined") return; // Prevent SSR issues
 
-// Create the default Leaflet icon
-const DefaultIcon = L.icon({
-//@ts-ignore
-  iconUrl,
-  //@ts-ignore
-  shadowUrl,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+  // Dynamic import only in browser
+  Promise.all([
+    import("leaflet"),
+    import("leaflet/dist/images/marker-icon.png"),
+    import("leaflet/dist/images/marker-icon-2x.png"),
+    import("leaflet/dist/images/marker-shadow.png"),
+  ]).then(([L, iconUrl, iconRetinaUrl, shadowUrl]) => {
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-L.Marker.prototype.options.icon = DefaultIcon;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: iconRetinaUrl.default,
+      iconUrl: iconUrl.default,
+      shadowUrl: shadowUrl.default,
+    });
+  });
+};

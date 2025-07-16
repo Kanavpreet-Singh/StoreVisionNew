@@ -2,7 +2,7 @@
 
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { useEffect } from 'react';
-import '@/lib/fix-leaflet-icon';
+import { fixLeafletIcons } from "@/lib/fix-leaflet-icon"
 type Props = {
   cityCenter: [number, number];
   latLon: [number, number] | null;
@@ -27,6 +27,7 @@ function MapUpdater({ center }: { center: [number, number] }) {
 }
 
 export default function MapPicker({ cityCenter, latLon, setLatLon }: Props) {
+  useEffect(() => fixLeafletIcons(), [])
   return (
     <MapContainer
       center={cityCenter}

@@ -61,10 +61,10 @@ export async function PATCH(
   try {
     const body = await request.json();
 
-    // Validate input (includes optional isActive field)
+    
     const validated = storeSchema.parse(body);
 
-    // Check if store exists and is owned by current user
+   
     const existingStore = await prisma.store.findUnique({
       where: { storeid },
     });
