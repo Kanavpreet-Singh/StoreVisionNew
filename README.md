@@ -14,6 +14,7 @@ Predictions are visualized with **interactive maps, heatmaps, and detailed analy
 - 🔄 **Order Reassignment** to new suggested stores
 - ✅ **Store Activation Toggles** (enable/disable stores dynamically)
 - 📍 **Smart Predictions** for new store locations based on unfulfilled demand
+- 📝 **Review & Sentiment Analysis**: Users can submit reviews, and **Hugging Face** is used to classify sentiments as **POSITIVE**, **NEGATIVE**, or **NEUTRAL** 
 - 🌓 **Dark/Light Mode** for enhanced user experience
 - 💾 **Reliable Database** with Prisma ORM and PostgreSQL
 
