@@ -60,7 +60,8 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  stores Store[] @relation("PostedStores")
+  stores  Store[]  @relation("PostedStores")
+  reviews Review[]
 }
 
 model Store {
@@ -89,4 +90,16 @@ model Order {
   isFulfilled Boolean @default(false)
   storeid     String?
   store       Store?  @relation(fields: [storeid], references: [storeid], onDelete: SetNull)
+}
+
+model Review {
+  id        String @id @default(cuid())
+  content   String
+  sentiment String // e.g. "POSITIVE", "NEGATIVE", "NEUTRAL"
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 }

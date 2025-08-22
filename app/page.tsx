@@ -1,12 +1,77 @@
 "use client"
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {Store, ShoppingCart, LogIn, BarChart3, MapPin, TrendingUp, Upload, Users, Zap, ArrowRight, CheckCircle } from "lucide-react";
+import {
+  Store,
+  ShoppingCart,
+  LogIn,
+  BarChart3,
+  MapPin,
+  TrendingUp,
+  Upload,
+  Users,
+  Zap,
+  ArrowRight,
+  CheckCircle,
+  Star,
+  MessageSquare,
+} from "lucide-react"
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+interface Review {
+  id: string
+  content: string
+  sentiment: string
+  createdAt: string
+  user: {
+    id: string
+    name: string
+    email: string
+  }
+}
 export default function Home() {
   const router = useRouter()
   const {data:session}=useSession();
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const response = await fetch("/api/reviews")
+        const data = await response.json()
+        setReviews(data.reviews || [])
+      } catch (error) {
+        console.error("Error fetching reviews:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchReviews()
+  }, [])
+
+  const getSentimentEmoji = (sentiment: string) => {
+    switch (sentiment.toUpperCase()) {
+      case "POSITIVE":
+        return "😊"
+      case "NEGATIVE":
+        return "😞"
+      case "NEUTRAL":
+        return "😐"
+      default:
+        return "💭"
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -144,6 +209,72 @@ export default function Home() {
               </CardHeader>
             </Card>
           </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-20 bg-muted/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Customers Say</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Real feedback from retailers who have transformed their business with StoreVision
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 text-muted-foreground">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                Loading reviews...
+              </div>
+            </div>
+          ) : reviews.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reviews.slice(0, 6).map((review) => (
+                <Card key={review.id} className="hover:shadow-lg transition-shadow duration-300 border-border">
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Users className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground">{review.user.name}</h4>
+                          <p className="text-sm text-muted-foreground">{formatDate(review.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-2xl">{getSentimentEmoji(review.sentiment)}</span>
+                        <span className="text-xs text-muted-foreground capitalize">
+                          {review.sentiment.toLowerCase()}
+                        </span>
+                      </div>
+                    </div>
+                    <CardDescription className="text-foreground leading-relaxed">"{review.content}"</CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center">
+              <MessageSquare className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No reviews yet. Be the first to share your experience!</p>
+              {session && (
+                <Button onClick={() => router.push("/review")} className="mt-4">
+                  Write a Review
+                </Button>
+              )}
+            </div>
+          )}
+
+          {reviews.length > 0 && (
+            <div className="text-center mt-12">
+              <Button onClick={() => router.push("/review")} size="lg" variant="outline">
+                <Star className="w-5 h-5 mr-2" />
+                {session ? "Write a Review" : "Sign in to Write a Review"}
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
